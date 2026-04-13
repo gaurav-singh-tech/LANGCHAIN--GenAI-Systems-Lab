@@ -1,45 +1,95 @@
 import streamlit as st
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+import os
 
 from langchain_mistralai import ChatMistralAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
-# Initialize model
-model = ChatMistralAI(model="mistral-small-2506", temperature=0.6)
+# -------------------------------
+# 🔐 Load API Key from Streamlit Secrets
+# -------------------------------
+api_key = os.getenv("MISTRAL_API_KEY")
 
-st.title("😂 Funny AI Chatbot")
-st.write("Chat with a very sad and irritating AI agent!")
+if not api_key:
+    st.error("⚠️ MISTRAL_API_KEY not found. Please add it in Streamlit Secrets.")
+    st.stop()
 
-# Initialize session state for messages
+# -------------------------------
+# 🤖 Initialize Model
+# -------------------------------
+model = ChatMistralAI(
+    model="mistral-small-2506",
+    temperature=0.6,
+    api_key=api_key
+)
+
+# -------------------------------
+# 🎨 UI Setup
+# -------------------------------
+st.set_page_config(page_title="AI Chatbot", page_icon="🤖")
+st.title("🤖 AI Chatbot")
+st.caption("Built with LangChain + Mistral + Streamlit")
+
+# -------------------------------
+# ⚙️ Sidebar Settings
+# -------------------------------
+st.sidebar.title("⚙️ Settings")
+
+mode = st.sidebar.selectbox(
+    "Choose AI Personality",
+    ["Funny 😄", "Sad 😒"]
+)
+
+if mode == "Funny 😄":
+    system_prompt = "You are a funny AI agent"
+else:
+    system_prompt = "You are a very sad and irritating AI agent"
+
+# -------------------------------
+# 💬 Chat Memory (Session State)
+# -------------------------------
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        SystemMessage(content="You are a very sad and irritating AI agent")
+        SystemMessage(content=system_prompt)
     ]
 
-# Display chat history
+# Reset if mode changes
+if st.sidebar.button("🔄 Reset Chat"):
+    st.session_state.messages = [
+        SystemMessage(content=system_prompt)
+    ]
+    st.rerun()
+
+# -------------------------------
+# 📜 Display Chat History
+# -------------------------------
 for msg in st.session_state.messages:
     if isinstance(msg, HumanMessage):
         st.chat_message("user").write(msg.content)
     elif isinstance(msg, AIMessage):
         st.chat_message("assistant").write(msg.content)
 
-# User input box
+# -------------------------------
+# ✍️ User Input
+# -------------------------------
 prompt = st.chat_input("Type your message...")
 
 if prompt:
-    
     # Add user message
     st.session_state.messages.append(HumanMessage(content=prompt))
     st.chat_message("user").write(prompt)
 
-    # Get response from model
-    response = model.invoke(st.session_state.messages)
+    # Generate response
+    with st.spinner("Thinking... 🤔"):
+        try:
+            response = model.invoke(st.session_state.messages)
 
-    # Save AI response
-    st.session_state.messages.append(AIMessage(content=response.content))
+            # Save AI response
+            st.session_state.messages.append(
+                AIMessage(content=response.content)
+            )
 
-    # Display response
-    st.chat_message("assistant").write(response.content)
+            # Display response
+            st.chat_message("assistant").write(response.content)
+
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
