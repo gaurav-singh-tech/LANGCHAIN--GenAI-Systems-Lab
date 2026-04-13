@@ -5,32 +5,37 @@ from langchain_mistralai import ChatMistralAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 # -------------------------------
-# 🔐 Load API Key from Streamlit Secrets
+# 🔐 API KEY FROM STREAMLIT SECRETS
 # -------------------------------
 api_key = os.getenv("MISTRAL_API_KEY")
 
 if not api_key:
-    st.error("⚠️ MISTRAL_API_KEY not found. Please add it in Streamlit Secrets.")
+    st.error("❌ MISTRAL_API_KEY not found. Add it in Streamlit Secrets.")
     st.stop()
 
 # -------------------------------
-# 🤖 Initialize Model
+# 🤖 MODEL INITIALIZATION
 # -------------------------------
-model = ChatMistralAI(
-    model="mistral-small-2506",
-    temperature=0.6,
-    api_key=api_key
-)
+try:
+    model = ChatMistralAI(
+        model="mistral-small-2506",
+        temperature=0.6,
+        api_key=api_key
+    )
+except Exception as e:
+    st.error(f"Model Initialization Error: {e}")
+    st.stop()
 
 # -------------------------------
-# 🎨 UI Setup
+# 🎨 PAGE CONFIG
 # -------------------------------
 st.set_page_config(page_title="AI Chatbot", page_icon="🤖")
+
 st.title("🤖 AI Chatbot")
-st.caption("Built with LangChain + Mistral + Streamlit")
+st.write("Chat with different AI personalities")
 
 # -------------------------------
-# ⚙️ Sidebar Settings
+# ⚙️ SIDEBAR SETTINGS
 # -------------------------------
 st.sidebar.title("⚙️ Settings")
 
@@ -45,14 +50,14 @@ else:
     system_prompt = "You are a very sad and irritating AI agent"
 
 # -------------------------------
-# 💬 Chat Memory (Session State)
+# 💬 SESSION STATE (CHAT MEMORY)
 # -------------------------------
 if "messages" not in st.session_state:
     st.session_state.messages = [
         SystemMessage(content=system_prompt)
     ]
 
-# Reset if mode changes
+# Reset chat button
 if st.sidebar.button("🔄 Reset Chat"):
     st.session_state.messages = [
         SystemMessage(content=system_prompt)
@@ -60,7 +65,7 @@ if st.sidebar.button("🔄 Reset Chat"):
     st.rerun()
 
 # -------------------------------
-# 📜 Display Chat History
+# 📜 DISPLAY CHAT HISTORY
 # -------------------------------
 for msg in st.session_state.messages:
     if isinstance(msg, HumanMessage):
@@ -69,12 +74,12 @@ for msg in st.session_state.messages:
         st.chat_message("assistant").write(msg.content)
 
 # -------------------------------
-# ✍️ User Input
+# ✍️ USER INPUT
 # -------------------------------
 prompt = st.chat_input("Type your message...")
 
 if prompt:
-    # Add user message
+    # Save user message
     st.session_state.messages.append(HumanMessage(content=prompt))
     st.chat_message("user").write(prompt)
 
@@ -88,8 +93,8 @@ if prompt:
                 AIMessage(content=response.content)
             )
 
-            # Display response
+            # Show response
             st.chat_message("assistant").write(response.content)
 
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error(f"❌ Error: {str(e)}")
