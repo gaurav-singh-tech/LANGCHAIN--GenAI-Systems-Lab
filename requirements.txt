@@ -17,3 +17,7 @@ langchain-core
 tiktoken
 fastapi
 uvicorn
+streamlit
+langchain
+langchain-core
+langchain-mistralai
